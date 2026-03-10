@@ -1,5 +1,7 @@
 import { BracketView } from "@/components/BracketView";
 
+export const dynamic = "force-dynamic";
+
 export default function BracketPage() {
   return (
     <div className="space-y-6">
