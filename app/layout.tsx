@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 // جلوگیری از prerender برای کل اپ (Supabase در build-time env ندارد)
 export const dynamic = "force-dynamic";
+// ضروری برای @cloudflare/next-on-pages
+export const runtime = "edge";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
