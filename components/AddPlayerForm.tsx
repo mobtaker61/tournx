@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 export function AddPlayerForm({ onAdded }: { onAdded?: () => void }) {
   const [name, setName] = useState("");
@@ -19,7 +19,8 @@ export function AddPlayerForm({ onAdded }: { onAdded?: () => void }) {
     }
     setLoading(true);
     try {
-      const { error: err } = await supabase
+      const sb = getSupabase();
+      const { error: err } = await sb
         .from("players")
         .insert({ name: name.trim() });
       if (err) throw err;

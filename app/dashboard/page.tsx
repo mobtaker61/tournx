@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import {
   generateFirstRound,
   generateNextRound,
@@ -20,18 +20,30 @@ export default function DashboardPage() {
   const [error, setError] = useState("");
 
   async function load() {
-    const { count: pc } = await supabase.from("players").select("*", { count: "exact", head: true });
-    setPlayerCount(pc ?? 0);
+    setError("");
+    try {
+      const sb = getSupabase();
+      const { count: pc } = await sb.from("players").select("*", { count: "exact", head: true });
+      setPlayerCount(pc ?? 0);
 
-    const { data: matches } = await supabase
-      .from("matches")
-      .select("id")
-      .is("winner_id", null)
-      .not("player1_id", "is", null);
-    setActiveMatchCount(matches?.length ?? 0);
+      const { data: matches } = await sb
+        .from("matches")
+        .select("id")
+        .is("winner_id", null)
+        .not("player1_id", "is", null);
+      setActiveMatchCount(matches?.length ?? 0);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "خطا در بارگذاری");
+      return;
+    }
 
-    const w = await checkTournamentWinner();
-    setWinner(w);
+    try {
+      const w = await checkTournamentWinner();
+      setWinner(w);
+    } catch {
+      setWinner(null);
+    }
+    setError("");
   }
 
   useEffect(() => {

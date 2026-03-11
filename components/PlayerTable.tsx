@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import type { Player } from "@/lib/supabase";
 
 export function PlayerTable({ refresh }: { refresh?: number }) {
@@ -20,20 +20,31 @@ export function PlayerTable({ refresh }: { refresh?: number }) {
   useEffect(() => {
     async function fetchPlayers() {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("players")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (!error) setPlayers(data ?? []);
-      setLoading(false);
+      try {
+        const sb = getSupabase();
+        const { data, error } = await sb
+          .from("players")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (!error) setPlayers(data ?? []);
+      } catch {
+        setPlayers([]);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchPlayers();
   }, [refresh]);
 
   async function removePlayer(id: string) {
     if (!confirm("آیا از حذف این بازیکن اطمینان دارید؟")) return;
-    await supabase.from("players").delete().eq("id", id);
-    setPlayers((p) => p.filter((x) => x.id !== id));
+    try {
+      const sb = getSupabase();
+      await sb.from("players").delete().eq("id", id);
+      setPlayers((p) => p.filter((x) => x.id !== id));
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "خطا در حذف");
+    }
   }
 
   if (loading) return <p className="text-muted-foreground">در حال بارگذاری...</p>;

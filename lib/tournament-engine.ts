@@ -1,7 +1,8 @@
-import { supabase } from "./supabase";
+import { getSupabase } from "./supabase";
 import type { Player, Round, Match } from "./supabase";
 
 export async function generateFirstRound(): Promise<{ matches: Match[] }> {
+  const supabase = getSupabase();
   const { data: players, error: playersError } = await supabase
     .from("players")
     .select("*")
@@ -43,6 +44,7 @@ export async function generateFirstRound(): Promise<{ matches: Match[] }> {
 }
 
 export async function generateNextRound(): Promise<{ round: Round; matches: Match[] }> {
+  const supabase = getSupabase();
   const { data: lastRound } = await supabase
     .from("rounds")
     .select("*")
@@ -97,6 +99,7 @@ export async function generateNextRound(): Promise<{ round: Round; matches: Matc
 }
 
 export async function generateLoserRound(): Promise<{ round: Round; matches: Match[] }> {
+  const supabase = getSupabase();
   const { data: lastLoserRound } = await supabase
     .from("rounds")
     .select("*")
@@ -166,6 +169,7 @@ export async function recordMatchResult(
   matchId: string,
   winnerId: string
 ): Promise<void> {
+  const supabase = getSupabase();
   const { data: match, error: fetchErr } = await supabase
     .from("matches")
     .select("*")
@@ -202,6 +206,7 @@ export async function recordMatchResult(
 }
 
 export async function checkTournamentWinner(): Promise<Player | null> {
+  const supabase = getSupabase();
   const { data: rounds } = await supabase
     .from("rounds")
     .select("id")

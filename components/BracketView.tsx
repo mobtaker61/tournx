@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 import type { MatchWithPlayers, Round } from "@/lib/supabase";
 import { MatchCard } from "./MatchCard";
 
@@ -18,62 +18,69 @@ export function BracketView() {
 
   async function load() {
     setLoading(true);
-    const { data: rounds } = await supabase
-      .from("rounds")
-      .select("*")
-      .order("round_number");
+    try {
+      const sb = getSupabase();
+      const { data: rounds } = await sb
+        .from("rounds")
+        .select("*")
+        .order("round_number");
 
-    if (!rounds?.length) {
+      if (!rounds?.length) {
+        setMainBracket([]);
+        setLoserBracket([]);
+        setLoading(false);
+        return;
+      }
+
+      const { data: matches } = await sb
+        .from("matches")
+        .select("*, round:rounds(*)");
+
+      const playerIds = new Set<string>();
+      for (const m of matches ?? []) {
+        if ((m as { player1_id?: string }).player1_id) playerIds.add((m as { player1_id: string }).player1_id);
+        if ((m as { player2_id?: string }).player2_id) playerIds.add((m as { player2_id: string }).player2_id);
+        if ((m as { winner_id?: string }).winner_id) playerIds.add((m as { winner_id: string }).winner_id);
+      }
+      const { data: players } = await sb
+        .from("players")
+        .select("id, name")
+        .in("id", [...playerIds]);
+      const playerMap = new Map((players ?? []).map((p) => [p.id, p]));
+
+      const byRound = new Map<string, MatchWithPlayers[]>();
+      for (const m of matches ?? []) {
+        const r = (m as { round?: Round }).round;
+        if (!r) continue;
+        const enriched: MatchWithPlayers = {
+          ...m,
+          player1: (m as { player1_id?: string }).player1_id ? playerMap.get((m as { player1_id: string }).player1_id) : null,
+          player2: (m as { player2_id?: string }).player2_id ? playerMap.get((m as { player2_id: string }).player2_id) : null,
+          winner: (m as { winner_id?: string }).winner_id ? playerMap.get((m as { winner_id: string }).winner_id) : null,
+          round: r,
+        };
+        const arr = byRound.get(r.id) ?? [];
+        arr.push(enriched);
+        byRound.set(r.id, arr);
+      }
+
+      const main: BracketSection[] = [];
+      const loser: BracketSection[] = [];
+      for (const r of rounds) {
+        const ms = byRound.get(r.id) ?? [];
+        const section = { round: r, matches: ms };
+        if (r.bracket_type === "main") main.push(section);
+        else loser.push(section);
+      }
+
+      setMainBracket(main);
+      setLoserBracket(loser);
+    } catch {
       setMainBracket([]);
       setLoserBracket([]);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const { data: matches } = await supabase
-      .from("matches")
-      .select("*, round:rounds(*)");
-
-    const playerIds = new Set<string>();
-    for (const m of matches ?? []) {
-      if ((m as { player1_id?: string }).player1_id) playerIds.add((m as { player1_id: string }).player1_id);
-      if ((m as { player2_id?: string }).player2_id) playerIds.add((m as { player2_id: string }).player2_id);
-      if ((m as { winner_id?: string }).winner_id) playerIds.add((m as { winner_id: string }).winner_id);
-    }
-    const { data: players } = await supabase
-      .from("players")
-      .select("id, name")
-      .in("id", [...playerIds]);
-    const playerMap = new Map((players ?? []).map((p) => [p.id, p]));
-
-    const byRound = new Map<string, MatchWithPlayers[]>();
-    for (const m of matches ?? []) {
-      const r = (m as { round?: Round }).round;
-      if (!r) continue;
-      const enriched: MatchWithPlayers = {
-        ...m,
-        player1: (m as { player1_id?: string }).player1_id ? playerMap.get((m as { player1_id: string }).player1_id) : null,
-        player2: (m as { player2_id?: string }).player2_id ? playerMap.get((m as { player2_id: string }).player2_id) : null,
-        winner: (m as { winner_id?: string }).winner_id ? playerMap.get((m as { winner_id: string }).winner_id) : null,
-        round: r,
-      };
-      const arr = byRound.get(r.id) ?? [];
-      arr.push(enriched);
-      byRound.set(r.id, arr);
-    }
-
-    const main: BracketSection[] = [];
-    const loser: BracketSection[] = [];
-    for (const r of rounds) {
-      const ms = byRound.get(r.id) ?? [];
-      const section = { round: r, matches: ms };
-      if (r.bracket_type === "main") main.push(section);
-      else loser.push(section);
-    }
-
-    setMainBracket(main);
-    setLoserBracket(loser);
-    setLoading(false);
   }
 
   useEffect(() => {
