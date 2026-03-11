@@ -58,12 +58,15 @@
 
 ## استقرار در Cloudflare Pages
 
-1. **تنظیم متغیرهای محیطی** در داشبورد Cloudflare Pages:
+این پروژه به صورت **Static Export** تنظیم شده و هیچ وابستگی به Vercel یا آداپتورهای خارجی ندارد.
+
+1. **تنظیم پروژه در Cloudflare Pages:**
+   - Framework preset: **None** یا **Next.js (Static HTML Export)**
+   - Build command: `npm run build`
+   - Build output directory: **`out`**
+
+2. **تنظیم متغیرهای محیطی** در Settings → Environment variables:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-2. **Build:**
-   - Build command: `npm run build`
-   - Build output: طبق پیش‌فرض Next.js (معمولاً `.next`)
-
-3. **نکته:** اگر لینک اصلی (`/`) به جای redirect صفحهٔ خالی نشان می‌دهد، مستقیماً به `/dashboard` بروید یا کش مرورگر را پاک کنید.
+3. پس از push به Git، Cloudflare به‌طور خودکار بیلد و deploy انجام می‌دهد.
